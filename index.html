@@ -85,7 +85,7 @@
     
     // ⚠️ ATENCIÓN: Esta URL de proxy es CRÍTICA para evitar el error CORS en GitHub Pages.
     // Debes asegurarte de que este servicio esté activo antes de usarlo.
-    const PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; 
+   
     
     // Elementos DOM para manipular
     const cookieInput = document.getElementById('cookieInput');
@@ -116,7 +116,7 @@
         submitBtn.disabled = true;
         
         // ⭐️ AQUÍ ES DONDE USAMOS EL PROXY ⭐️
-        const finalUrl = PROXY_URL + JIRA_API_URL;
+        const finalUrl = JIRA_API_URL;
         
         mostrarResultado(`Cargando... Validando la cookie a través del proxy: ${PROXY_URL}`, 'info');
 
@@ -167,5 +167,6 @@
 
 </body>
 </html>
+
 
 
