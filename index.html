@@ -32,7 +32,7 @@
     </div>
 
     <script>
-        // ⭐️ ESTE ES TU ENDPOINT GENERADO ⭐️
+        // ⭐️ ENDPOINT DE LA APLICACIÓN WEB DE APPS SCRIPT ⭐️
         const API_ENDPOINT_URL = 'https://script.google.com/a/macros/bbva.com/s/AKfycbwWApHPf5WEhlXEbbFwaMAlwwfjEM4M0vY137UMB-SKVF80QeSKg6BfCnAJide9Pg3nKg/exec';
         
         const cookieInput = document.getElementById('cookieInput');
@@ -44,6 +44,9 @@
             resultadoPre.className = type;
         }
 
+        /**
+         * Realiza la invocación POST a la API de Apps Script.
+         */
         async function validarCookie() {
             const cookieValue = cookieInput.value.trim();
 
@@ -56,23 +59,24 @@
             mostrarResultado('Cargando... Enviando solicitud POST al servidor de Google.', 'info');
 
             const options = {
-                method: 'POST', // Clave: Petición POST a Apps Script para evitar CORS
+                method: 'POST', // ⭐️ Método POST obligatorio para Apps Script doPost() ⭐️
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json' // Indica que el cuerpo es JSON
                 },
-                // La cookie se transporta de forma segura en el cuerpo JSON
+                // El cuerpo transporta la cookie al servidor de Apps Script
                 body: JSON.stringify({
                     cookie: cookieValue
                 })
             };
 
             try {
+                // 1. Llamada a tu API de Apps Script
                 const response = await fetch(API_ENDPOINT_URL, options);
                 
-                // Leemos la respuesta JSON enviada por la función doPost()
+                // 2. Leer la respuesta JSON
                 const responseBody = await response.json();
 
-                // Manejo del resultado basado en las propiedades 'error' o 'success'
+                // 3. Manejo del resultado basado en el JSON devuelto por doPost
                 if (responseBody.error) {
                     mostrarResultado(`❌ Error de Validación: ${responseBody.message}`, 'error');
                 } else if (responseBody.success) {
@@ -87,7 +91,7 @@
                 }
 
             } catch (error) {
-                mostrarResultado(`❌ Fallo en la comunicación: ${error.message}. Asegúrate de que el script esté desplegado como "Aplicación Web" con "Acceso a: Cualquiera".`, 'error');
+                mostrarResultado(`❌ Fallo en la comunicación: ${error.message}. Verifica tu conexión o el despliegue del script.`, 'error');
             } finally {
                 submitBtn.disabled = false;
             }
