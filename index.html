@@ -79,95 +79,93 @@
         <pre id="resultado" class="info">Esperando que ingreses la cookie...</pre>
     </div>
 
-    <script>
-        // La URL de la API de Jira que se quiere consultar
-        const JIRA_API_URL = 'https://jira.globaldevtools.bbva.com/rest/api/2/myself';
-        
-        // Proxy URL (Usada para evitar problemas de CORS)
- 
-        
-        // Elementos DOM para manipular
-        const cookieInput = document.getElementById('cookieInput');
-        const resultadoPre = document.getElementById('resultado');
-        const submitBtn = document.getElementById('submitBtn');
+<script>
+    // La URL de la API de Jira que se quiere consultar
+    const JIRA_API_URL = 'https://jira.globaldevtools.bbva.com/rest/api/2/myself';
+    
+    // ⚠️ ATENCIÓN: Esta URL de proxy es CRÍTICA para evitar el error CORS en GitHub Pages.
+    // Debes asegurarte de que este servicio esté activo antes de usarlo.
+    const PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; 
+    
+    // Elementos DOM para manipular
+    const cookieInput = document.getElementById('cookieInput');
+    const resultadoPre = document.getElementById('resultado');
+    const submitBtn = document.getElementById('submitBtn');
 
-        /**
-         * Función auxiliar para actualizar el área de resultado.
-         * @param {string} message Mensaje a mostrar.
-         * @param {string} type Clase CSS (success, error, info).
-         */
-        function mostrarResultado(message, type) {
-            resultadoPre.textContent = message;
-            // Quitamos todas las clases de estado y agregamos la nueva
-            resultadoPre.className = '';
-            resultadoPre.classList.add(type);
+    /**
+     * Función auxiliar para actualizar el área de resultado.
+     */
+    function mostrarResultado(message, type) {
+        resultadoPre.textContent = message;
+        resultadoPre.className = '';
+        resultadoPre.classList.add(type);
+    }
+
+    /**
+     * Ejecuta la solicitud GET a través del proxy.
+     */
+    async function validarCookieWeb() {
+        const cookieValue = cookieInput.value.trim();
+
+        if (!cookieValue) {
+            mostrarResultado('Error: Por favor, ingresa la cookie de sesión.', 'error');
+            return;
         }
 
-        /**
-         * Ejecuta la solicitud GET a través del proxy.
-         */
-        async function validarCookieWeb() {
-            const cookieValue = cookieInput.value.trim();
+        // Deshabilitar botón y mostrar carga
+        submitBtn.disabled = true;
+        
+        // ⭐️ AQUÍ ES DONDE USAMOS EL PROXY ⭐️
+        const finalUrl = PROXY_URL + JIRA_API_URL;
+        
+        mostrarResultado(`Cargando... Validando la cookie a través del proxy: ${PROXY_URL}`, 'info');
 
-            if (!cookieValue) {
-                mostrarResultado('Error: Por favor, ingresa la cookie de sesión.', 'error');
-                return;
+        const options = {
+            method: 'GET',
+            headers: {
+                // La cookie DEBE ser enviada en el header 'Cookie'
+                'Cookie': cookieValue,
+                'Accept': 'application/json',
             }
+        };
 
-            // Deshabilitar botón y mostrar carga
-            submitBtn.disabled = true;
-            mostrarResultado('Cargando... Validando la cookie a través del proxy.', 'info');
+        try {
+            const response = await fetch(finalUrl, options);
 
-            const finalUrl = JIRA_API_URL;
-
-            // ⭐️ Solución del error de sintaxis y eliminación de 'muteHttpExceptions' (que es de Apps Script)
-            const options = {
-                method: 'GET',
-                headers: {
-                    'Cookie': cookieValue,
-                    'Accept': 'application/json',
-                    // Importante: Algunos proxies pueden requerir o bloquear este header.
-                    // Lo dejamos omitido para simplicidad.
-                }
-            };
-
-            try {
-                const response = await fetch(finalUrl, options);
-
-                // Intenta leer el cuerpo como JSON primero, pero prepárate para leerlo como texto.
-                const isJson = response.headers.get('content-type')?.includes('application/json');
-                const responseBody = await (isJson ? response.json() : response.text());
-                
-                // Manejo de errores de Autenticación
-                if (response.status === 401 || response.status === 403) {
-                    throw new Error(`Autenticación fallida. (Código: ${response.status}). Cookie inválida o expirada.`);
-                }
-                
-                // Manejo de otros errores HTTP
-                if (!response.ok) {
-                    const message = isJson ? JSON.stringify(responseBody, null, 2) : responseBody.toString().substring(0, 200) + '...';
-                    throw new Error(`Error HTTP: ${response.status}. Detalles: ${message}`);
-                }
-                
-                // ✅ Éxito (response.ok es true, status es 200-299)
-                const displayName = responseBody.displayName || 'Desconocido';
-                const email = responseBody.emailAddress || 'N/A';
-                
-                mostrarResultado(
-                    `✅ Validación Exitosa!\nConectado como: ${displayName}\nEmail: ${email}\n\nDatos Completos:\n${JSON.stringify(responseBody, null, 2)}`, 
-                    'success'
-                );
-
-            } catch (error) {
-                // Captura fallos de red, problemas de CORS, o errores lanzados desde el bloque 'then'
-                mostrarResultado(`❌ Error en la solicitud:\n${error.message}`, 'error');
-                console.error('Detalles del error:', error);
-            } finally {
-                submitBtn.disabled = false;
+            // Intenta leer el cuerpo.
+            const isJson = response.headers.get('content-type')?.includes('application/json');
+            const responseBody = await (isJson ? response.json() : response.text());
+            
+            // Manejo de errores de Autenticación
+            if (response.status === 401 || response.status === 403) {
+                throw new Error(`Autenticación fallida. (Código: ${response.status}). Cookie inválida o expirada.`);
             }
+            
+            // Manejo de otros errores HTTP
+            if (!response.ok) {
+                const message = isJson ? JSON.stringify(responseBody, null, 2) : responseBody.toString().substring(0, 200) + '...';
+                throw new Error(`Error HTTP: ${response.status}. Detalles: ${message}`);
+            }
+            
+            // ✅ Éxito
+            const displayName = responseBody.displayName || 'Desconocido';
+            const email = responseBody.emailAddress || 'N/A';
+            
+            mostrarResultado(
+                `✅ Validación Exitosa!\nConectado como: ${displayName}\nEmail: ${email}\n\nDatos Completos:\n${JSON.stringify(responseBody, null, 2)}`, 
+                'success'
+            );
+
+        } catch (error) {
+            mostrarResultado(`❌ Error en la solicitud:\n${error.message}`, 'error');
+            console.error('Detalles del error:', error);
+        } finally {
+            submitBtn.disabled = false;
         }
-    </script>
+    }
+</script>
 
 </body>
 </html>
+
 
