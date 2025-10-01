@@ -84,7 +84,7 @@
         const JIRA_API_URL = 'https://jira.globaldevtools.bbva.com/rest/api/2/myself';
         
         // Proxy URL (Usada para evitar problemas de CORS)
-        const PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; 
+ 
         
         // Elementos DOM para manipular
         const cookieInput = document.getElementById('cookieInput');
@@ -118,7 +118,7 @@
             submitBtn.disabled = true;
             mostrarResultado('Cargando... Validando la cookie a través del proxy.', 'info');
 
-            const finalUrl = PROXY_URL + JIRA_API_URL;
+            const finalUrl = JIRA_API_URL;
 
             // ⭐️ Solución del error de sintaxis y eliminación de 'muteHttpExceptions' (que es de Apps Script)
             const options = {
@@ -170,3 +170,4 @@
 
 </body>
 </html>
+
