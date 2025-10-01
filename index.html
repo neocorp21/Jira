@@ -3,11 +3,30 @@
 <head>
     <base target="_top">
     <style>
-        body { font-family: Arial, sans-serif; padding: 10px; }
-        input[type="text"] { width: 95%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; }
-        button { padding: 10px 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        #resultado { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        body { font-family: Arial, sans-serif; padding: 10px; background-color: #f7f7f7; }
+        input[type="text"] { 
+            width: 95%; 
+            padding: 10px; 
+            margin-bottom: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+        }
+        button { 
+            padding: 10px 20px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px;
+            cursor: pointer; 
+            font-size: 16px;
+        }
+        button:disabled { background-color: #a8c8e6; cursor: not-allowed; }
+        #resultado { 
+            margin-top: 20px; 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-weight: bold;
+        }
         .success { background-color: #e6ffe6; border: 1px solid #00cc00; color: #008000; }
         .error { background-color: #ffe6e6; border: 1px solid #cc0000; color: #cc0000; }
         .loading { background-color: #ffffcc; border: 1px solid #cccc00; color: #808000; }
@@ -15,25 +34,21 @@
 </head>
 <body>
 
-    <h1>Validación de Cookie de Jira</h1>
+    <p>Ingresa la cookie de sesión de Jira y valida (una sola petición GET).</p>
 
-    <label for="cookieInput">Ingresa la cookie de sesión completa (Ej: `JSESSIONID=...`):</label>
-    <input type="text" id="cookieInput" placeholder="Pega tu valor de cookie aquí" value="">
+    <input type="text" id="cookieInput" placeholder="Pega tu valor de cookie aquí (Ej: JSESSIONID=...;)" value="">
 
-    <button onclick="enviarCookie()" id="submitBtn">Validar Cookie (GET)</button>
+    <button onclick="enviarCookie()" id="submitBtn">Validar Cookie Rápidamente</button>
 
     <div id="resultado" class="loading">Esperando entrada...</div>
 
     <script>
         /**
-         * Función que se ejecuta al hacer clic en el botón.
-         * Toma el valor del input y lo envía al Apps Script.
+         * Función que toma el valor del input y lo envía al Apps Script.
          */
         function enviarCookie() {
             const cookieInput = document.getElementById('cookieInput');
-            const resultadoDiv = document.getElementById('resultado');
             const submitBtn = document.getElementById('submitBtn');
-
             const cookieValue = cookieInput.value;
 
             if (cookieValue.trim() === '') {
@@ -43,7 +58,7 @@
 
             // Deshabilitar botón y mostrar carga
             submitBtn.disabled = true;
-            mostrarResultado("Validando conexión con la API de Jira...", 'loading');
+            mostrarResultado("Validando conexión... Esto será rápido.", 'loading');
 
             // Llama a la función 'ValidarCookie' en el Apps Script
             google.script.run
@@ -53,21 +68,19 @@
         }
 
         /**
-         * Manejador de éxito de la llamada al servidor.
+         * Manejador de éxito (recibe la respuesta del Apps Script).
          */
         function onSuccess(response) {
-            const resultadoDiv = document.getElementById('resultado');
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = false;
 
             if (response && response.success) {
                 // Validación exitosa
                 const displayName = response.userData.displayName || 'Usuario Desconocido';
-                const email = response.userData.emailAddress || 'No proporcionado';
-                const message = `✅ ¡Validación Exitosa! Conectado como: ${displayName} (${email}).`;
+                const message = `✅ ¡Validación Exitosa! Conectado como: ${displayName}.`;
                 mostrarResultado(message, 'success');
             } else if (response && response.error) {
-                // Error de validación (e.g., cookie expirada)
+                // Error de validación (e.g., cookie expirada o error HTTP)
                 mostrarResultado(`❌ Error: ${response.message}`, 'error');
             } else {
                  // Respuesta inesperada
@@ -76,7 +89,7 @@
         }
 
         /**
-         * Manejador de fallo de la llamada al servidor (e.g., timeout de script).
+         * Manejador de fallo (error en la comunicación con Apps Script).
          */
         function onFailure(error) {
             const submitBtn = document.getElementById('submitBtn');
@@ -90,8 +103,7 @@
         function mostrarResultado(message, type) {
             const resultadoDiv = document.getElementById('resultado');
             resultadoDiv.textContent = message;
-            resultadoDiv.className = '';
-            resultadoDiv.classList.add(type);
+            resultadoDiv.className = type;
         }
     </script>
 
