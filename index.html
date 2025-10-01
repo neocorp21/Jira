@@ -1,109 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <base target="_top">
-    <style>
-        body { font-family: Arial, sans-serif; padding: 10px; background-color: #f7f7f7; }
-        input[type="text"] { 
-            width: 95%; 
-            padding: 10px; 
-            margin-bottom: 15px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px;
-        }
-        button { 
-            padding: 10px 20px; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 4px;
-            cursor: pointer; 
-            font-size: 16px;
-        }
-        button:disabled { background-color: #a8c8e6; cursor: not-allowed; }
-        #resultado { 
-            margin-top: 20px; 
-            padding: 10px; 
-            border-radius: 4px; 
-            font-weight: bold;
-        }
-        .success { background-color: #e6ffe6; border: 1px solid #00cc00; color: #008000; }
-        .error { background-color: #ffe6e6; border: 1px solid #cc0000; color: #cc0000; }
-        .loading { background-color: #ffffcc; border: 1px solid #cccc00; color: #808000; }
-    </style>
+    <meta charset="UTF-8">
+    <title>Validación de Cookie en GitHub Pages</title>
 </head>
 <body>
 
-    <p>Ingresa la cookie de sesión de Jira y valida (una sola petición GET).</p>
+    <h1>Validación de Cookie de Jira (GitHub/Web)</h1>
 
-    <input type="text" id="cookieInput" placeholder="Pega tu valor de cookie aquí (Ej: JSESSIONID=...;)" value="">
+    <p>Ingresa la cookie de sesión completa (Ej: `JSESSIONID=...`):</p>
+    <input type="text" id="cookieInput" style="width: 80%; padding: 8px;">
 
-    <button onclick="enviarCookie()" id="submitBtn">Validar Cookie Rápidamente</button>
+    <button onclick="validarCookieWeb()" id="submitBtn">Validar Cookie (GET)</button>
 
-    <div id="resultado" class="loading">Esperando entrada...</div>
+    <pre id="resultado" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap;">Esperando consulta...</pre>
 
     <script>
-        /**
-         * Función que toma el valor del input y lo envía al Apps Script.
-         */
-        function enviarCookie() {
+        // La URL de Jira
+        const JIRA_API_URL = 'https://jira.globaldevtools.bbva.com/rest/api/2/myself';
+        
+        // ⚠️ ADVERTENCIA: Usar un proxy público como este (cors-anywhere) no es seguro ni confiable para producción.
+        // Es solo para demostrar la funcionalidad. En producción necesitarías tu propio backend/proxy.
+        const PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; 
+        
+        function validarCookieWeb() {
             const cookieInput = document.getElementById('cookieInput');
+            const resultadoPre = document.getElementById('resultado');
             const submitBtn = document.getElementById('submitBtn');
-            const cookieValue = cookieInput.value;
+            const cookieValue = cookieInput.value.trim();
 
-            if (cookieValue.trim() === '') {
-                mostrarResultado("Ingresa el valor de la cookie.", 'error');
+            if (!cookieValue) {
+                resultadoPre.textContent = 'Error: Por favor, ingresa la cookie.';
                 return;
             }
 
-            // Deshabilitar botón y mostrar carga
             submitBtn.disabled = true;
-            mostrarResultado("Validando conexión... Esto será rápido.", 'loading');
+            resultadoPre.textContent = 'Cargando...';
 
-            // Llama a la función 'ValidarCookie' en el Apps Script
-            google.script.run
-                .withSuccessHandler(onSuccess)
-                .withFailureHandler(onFailure)
-                .ValidarCookie(cookieValue);
-        }
+            // Usamos el proxy para evitar el error CORS en el navegador
+            const finalUrl = PROXY_URL + JIRA_API_URL;
 
-        /**
-         * Manejador de éxito (recibe la respuesta del Apps Script).
-         */
-        function onSuccess(response) {
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = false;
+            // Opción de configuración para la solicitud
+            const options = {
+                method: 'GET',
+                headers: {
+                    // La cookie DEBE ser enviada en el header 'Cookie'
+                    'Cookie': cookieValue,
+                    'Accept': 'application/json'
+                    // NOTA: Algunos proxies requieren que el header 'X-Requested-With' se omita o se establezca
+                }
+            };
 
-            if (response && response.success) {
-                // Validación exitosa
-                const displayName = response.userData.displayName || 'Usuario Desconocido';
-                const message = `✅ ¡Validación Exitosa! Conectado como: ${displayName}.`;
-                mostrarResultado(message, 'success');
-            } else if (response && response.error) {
-                // Error de validación (e.g., cookie expirada o error HTTP)
-                mostrarResultado(`❌ Error: ${response.message}`, 'error');
-            } else {
-                 // Respuesta inesperada
-                mostrarResultado('❌ Error: Respuesta inesperada del servidor.', 'error');
-            }
-        }
-
-        /**
-         * Manejador de fallo (error en la comunicación con Apps Script).
-         */
-        function onFailure(error) {
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = false;
-            mostrarResultado('❌ Fallo en la comunicación con Google Apps Script: ' + error.message, 'error');
-        }
-
-        /**
-         * Función auxiliar para actualizar el div de resultado.
-         */
-        function mostrarResultado(message, type) {
-            const resultadoDiv = document.getElementById('resultado');
-            resultadoDiv.textContent = message;
-            resultadoDiv.className = type;
+            fetch(finalUrl, options)
+                .then(response => {
+                    // Si el proxy devuelve un error, el código de estado HTTP puede ser 200, pero el cuerpo indica el error
+                    if (response.status === 401 || response.status === 403) {
+                         return response.text().then(text => { throw new Error(`Autenticación fallida (${response.status}). Cookie expirada/inválida.`); });
+                    }
+                    if (!response.ok) {
+                         return response.text().then(text => { throw new Error(`Error HTTP: ${response.status}. ${text.substring(0, 100)}...`); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Éxito
+                    resultadoPre.textContent = '✅ Éxito:\n' + JSON.stringify(data, null, 2);
+                    console.log('Datos recibidos:', data);
+                })
+                .catch(error => {
+                    // Fallo de red, CORS, o respuesta no-200
+                    resultadoPre.textContent = '❌ Error:\n' + error.message;
+                    console.error('Fallo en la solicitud:', error);
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                });
         }
     </script>
 
