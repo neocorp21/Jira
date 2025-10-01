@@ -1,72 +1,97 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solicitud API GET</title>
+    <base target="_top">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        #resultado {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            background-color: #f9f9f9;
-            white-space: pre-wrap; /* Para mostrar el JSON con formato */
-        }
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-        }
+        body { font-family: Arial, sans-serif; padding: 10px; }
+        input[type="text"] { width: 95%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #resultado { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .success { background-color: #e6ffe6; border: 1px solid #00cc00; color: #008000; }
+        .error { background-color: #ffe6e6; border: 1px solid #cc0000; color: #cc0000; }
+        .loading { background-color: #ffffcc; border: 1px solid #cccc00; color: #808000; }
     </style>
 </head>
 <body>
 
-    <h1>Consulta a la API</h1>
+    <h1>Validación de Cookie de Jira</h1>
 
-    <p>Haz clic en el botón para ejecutar la solicitud GET a la API.</p>
+    <label for="cookieInput">Ingresa la cookie de sesión completa (Ej: `JSESSIONID=...`):</label>
+    <input type="text" id="cookieInput" placeholder="Pega tu valor de cookie aquí" value="">
 
-    <input type="button" value="Consultar API" onclick="consultarAPI()">
+    <button onclick="enviarCookie()" id="submitBtn">Validar Cookie (GET)</button>
 
-    <h2>Resultado:</h2>
-    <pre id="resultado">Esperando consulta...</pre>
+    <div id="resultado" class="loading">Esperando entrada...</div>
 
     <script>
         /**
-         * Función para realizar una solicitud GET a la API.
+         * Función que se ejecuta al hacer clic en el botón.
+         * Toma el valor del input y lo envía al Apps Script.
          */
-        function consultarAPI() {
-            // **IMPORTANTE**: Reemplaza '[TU_URL_DE_API_AQUI]' con la URL real de tu API.
-            const apiUrl = '[TU_URL_DE_API_AQUI]';
+        function enviarCookie() {
+            const cookieInput = document.getElementById('cookieInput');
             const resultadoDiv = document.getElementById('resultado');
+            const submitBtn = document.getElementById('submitBtn');
 
-            resultadoDiv.textContent = 'Cargando...'; // Muestra un mensaje de carga
+            const cookieValue = cookieInput.value;
 
-            // Uso de la API Fetch para hacer la solicitud GET
-            fetch(apiUrl)
-                .then(response => {
-                    // Verifica si la respuesta es exitosa (código de estado 200-299)
-                    if (!response.ok) {
-                        // Lanza un error si la respuesta no es OK
-                        throw new Error(`Error HTTP: ${response.status}`);
-                    }
-                    // Convierte la respuesta a formato JSON
-                    return response.json();
-                })
-                .then(data => {
-                    // Muestra los datos obtenidos en la página
-                    // `JSON.stringify(data, null, 2)` formatea el JSON para una mejor lectura
-                    resultadoDiv.textContent = JSON.stringify(data, null, 2);
-                    console.log('Datos recibidos:', data);
-                })
-                .catch(error => {
-                    // Captura y maneja cualquier error (red, HTTP, JSON parsing)
-                    console.error('Hubo un problema con la solicitud fetch:', error);
-                    resultadoDiv.textContent = `Error al consultar la API: ${error.message}. Verifica la URL y la conexión.`;
-                });
+            if (cookieValue.trim() === '') {
+                mostrarResultado("Ingresa el valor de la cookie.", 'error');
+                return;
+            }
+
+            // Deshabilitar botón y mostrar carga
+            submitBtn.disabled = true;
+            mostrarResultado("Validando conexión con la API de Jira...", 'loading');
+
+            // Llama a la función 'ValidarCookie' en el Apps Script
+            google.script.run
+                .withSuccessHandler(onSuccess)
+                .withFailureHandler(onFailure)
+                .ValidarCookie(cookieValue);
+        }
+
+        /**
+         * Manejador de éxito de la llamada al servidor.
+         */
+        function onSuccess(response) {
+            const resultadoDiv = document.getElementById('resultado');
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+
+            if (response && response.success) {
+                // Validación exitosa
+                const displayName = response.userData.displayName || 'Usuario Desconocido';
+                const email = response.userData.emailAddress || 'No proporcionado';
+                const message = `✅ ¡Validación Exitosa! Conectado como: ${displayName} (${email}).`;
+                mostrarResultado(message, 'success');
+            } else if (response && response.error) {
+                // Error de validación (e.g., cookie expirada)
+                mostrarResultado(`❌ Error: ${response.message}`, 'error');
+            } else {
+                 // Respuesta inesperada
+                mostrarResultado('❌ Error: Respuesta inesperada del servidor.', 'error');
+            }
+        }
+
+        /**
+         * Manejador de fallo de la llamada al servidor (e.g., timeout de script).
+         */
+        function onFailure(error) {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            mostrarResultado('❌ Fallo en la comunicación con Google Apps Script: ' + error.message, 'error');
+        }
+
+        /**
+         * Función auxiliar para actualizar el div de resultado.
+         */
+        function mostrarResultado(message, type) {
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.textContent = message;
+            resultadoDiv.className = '';
+            resultadoDiv.classList.add(type);
         }
     </script>
 
