@@ -3,170 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validación de Cookie de Jira</title>
+    <title>Cliente de API de Saludo</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-            background-color: #f4f4f9;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #333;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0 20px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box; /* Incluye padding y border en el ancho */
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        button:hover:not(:disabled) {
-            background-color: #0056b3;
-        }
-        button:disabled {
-            background-color: #a8c8e6;
-            cursor: not-allowed;
-        }
-        #resultado {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            font-size: 0.9em;
-            overflow-x: auto;
-        }
-        .success { background-color: #e6ffe6; border: 1px solid #00cc00; color: #008000; }
-        .error { background-color: #ffe6e6; border: 1px solid #cc0000; color: #cc0000; }
-        .info { background-color: #ccf2ff; border: 1px solid #0099cc; color: #006699; }
-        .warning { background-color: #fff8e1; border: 1px solid #ffc107; color: #856404; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em; }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #resultado { margin-top: 20px; padding: 15px; border: 1px solid #ddd; background: #f9f9f9; white-space: pre-wrap; }
+        button { padding: 10px 15px; background-color: #008080; color: white; border: none; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
     
-    <div class="container">
-        <h1>Validación Rápida de Cookie de Jira</h1>
+    <h1>Consumo de API de Saludo (Apps Script)</h1>
 
-        <div class="warning">
-            ⚠️ **Advertencia de Seguridad:** Este código usa un proxy público (`cors-anywhere`) para evitar errores CORS en el navegador. **NO** es seguro ni confiable para entornos de producción. Úsalo solo para pruebas rápidas.
-        </div>
-
-        <p>Ingresa la cookie de sesión completa (Ej: `JSESSIONID=...`):</p>
-        <input type="text" id="cookieInput" placeholder="Pega el valor de la cookie aquí" onkeydown="if (event.key === 'Enter') validarCookieWeb()">
-
-        <button onclick="validarCookieWeb()" id="submitBtn">Validar Cookie (GET)</button>
-
-        <pre id="resultado" class="info">Esperando que ingreses la cookie...</pre>
-    </div>
-
-<script>
-    // La URL de la API de Jira que se quiere consultar
-    const JIRA_API_URL = 'https://jira.globaldevtools.bbva.com/rest/api/2/myself';
+    <p>Haz clic para obtener el saludo desde tu API desplegada.</p>
     
-    // ⚠️ ATENCIÓN: Esta URL de proxy es CRÍTICA para evitar el error CORS en GitHub Pages.
-    // Debes asegurarte de que este servicio esté activo antes de usarlo.
-   
-    
-    // Elementos DOM para manipular
-    const cookieInput = document.getElementById('cookieInput');
-    const resultadoPre = document.getElementById('resultado');
-    const submitBtn = document.getElementById('submitBtn');
+    <button onclick="obtenerSaludo()">Obtener Saludo (GET)</button>
 
-    /**
-     * Función auxiliar para actualizar el área de resultado.
-     */
-    function mostrarResultado(message, type) {
-        resultadoPre.textContent = message;
-        resultadoPre.className = '';
-        resultadoPre.classList.add(type);
-    }
+    <pre id="resultado">Esperando respuesta de la API...</pre>
 
-    /**
-     * Ejecuta la solicitud GET a través del proxy.
-     */
-    async function validarCookieWeb() {
-        const cookieValue = cookieInput.value.trim();
-
-        if (!cookieValue) {
-            mostrarResultado('Error: Por favor, ingresa la cookie de sesión.', 'error');
-            return;
-        }
-
-        // Deshabilitar botón y mostrar carga
-        submitBtn.disabled = true;
+    <script>
+        // ⭐️ IMPORTANTE: REEMPLAZA ESTA URL con la URL de tu Web App
+        const API_ENDPOINT_URL = 'REEMPLAZAR_CON_TU_URL_DE_APPS_SCRIPT_AQUÍ';
         
-        // ⭐️ AQUÍ ES DONDE USAMOS EL PROXY ⭐️
-        const finalUrl = JIRA_API_URL;
-        
-        mostrarResultado(`Cargando... Validando la cookie a través del proxy: ${PROXY_URL}`, 'info');
+        const resultadoPre = document.getElementById('resultado');
+        const submitBtn = document.querySelector('button');
 
-        const options = {
-            method: 'GET',
-            headers: {
-                // La cookie DEBE ser enviada en el header 'Cookie'
-                'Cookie': cookieValue,
-                'Accept': 'application/json',
-            }
-        };
-
-        try {
-            const response = await fetch(finalUrl, options);
-
-            // Intenta leer el cuerpo.
-            const isJson = response.headers.get('content-type')?.includes('application/json');
-            const responseBody = await (isJson ? response.json() : response.text());
-            
-            // Manejo de errores de Autenticación
-            if (response.status === 401 || response.status === 403) {
-                throw new Error(`Autenticación fallida. (Código: ${response.status}). Cookie inválida o expirada.`);
+        async function obtenerSaludo() {
+            if (API_ENDPOINT_URL.includes('REEMPLAZAR')) {
+                resultadoPre.textContent = "ERROR: Por favor, actualiza la variable API_ENDPOINT_URL en el script.";
+                return;
             }
             
-            // Manejo de otros errores HTTP
-            if (!response.ok) {
-                const message = isJson ? JSON.stringify(responseBody, null, 2) : responseBody.toString().substring(0, 200) + '...';
-                throw new Error(`Error HTTP: ${response.status}. Detalles: ${message}`);
-            }
-            
-            // ✅ Éxito
-            const displayName = responseBody.displayName || 'Desconocido';
-            const email = responseBody.emailAddress || 'N/A';
-            
-            mostrarResultado(
-                `✅ Validación Exitosa!\nConectado como: ${displayName}\nEmail: ${email}\n\nDatos Completos:\n${JSON.stringify(responseBody, null, 2)}`, 
-                'success'
-            );
+            submitBtn.disabled = true;
+            resultadoPre.textContent = 'Cargando...';
 
-        } catch (error) {
-            mostrarResultado(`❌ Error en la solicitud:\n${error.message}`, 'error');
-            console.error('Detalles del error:', error);
-        } finally {
-            submitBtn.disabled = false;
+            try {
+                const response = await fetch(API_ENDPOINT_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Mostrar el resultado JSON
+                resultadoPre.textContent = '✅ Respuesta Exitosa:\n' + JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                // Captura errores de red o errores HTTP
+                resultadoPre.textContent = `❌ Error al consultar la API: ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
         }
-    }
-</script>
-
+    </script>
 </body>
 </html>
-
-
-
