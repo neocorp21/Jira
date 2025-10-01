@@ -3,54 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cliente de API de Saludo</title>
+    <title>Validación de Cookie - Cliente Apps Script API</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        #resultado { margin-top: 20px; padding: 15px; border: 1px solid #ddd; background: #f9f9f9; white-space: pre-wrap; }
-        button { padding: 10px 15px; background-color: #008080; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0 20px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        #resultado { margin-top: 20px; padding: 15px; border-radius: 4px; white-space: pre-wrap; font-size: 0.9em; }
+        .success { background-color: #e6ffe6; border: 1px solid #00cc00; color: #008000; }
+        .error { background-color: #ffe6e6; border: 1px solid #cc0000; color: #cc0000; }
+        .info { background-color: #ccf2ff; border: 1px solid #0099cc; color: #006699; }
     </style>
 </head>
 <body>
     
-    <h1>Consumo de API de Saludo (Apps Script)</h1>
+    <div class="container">
+        <h1>Validación de Cookie vía Apps Script API</h1>
 
-    <p>Haz clic para obtener el saludo desde tu API desplegada.</p>
-    
-    <button onclick="obtenerSaludo()">Obtener Saludo (GET)</button>
+        <p>Ingresa la cookie de sesión de Jira:</p>
+        <input type="text" id="cookieInput" placeholder="Pega el valor de la cookie aquí">
 
-    <pre id="resultado">Esperando respuesta de la API...</pre>
+        <button onclick="validarCookie()" id="submitBtn">Validar Cookie</button>
+
+        <pre id="resultado" class="info">Esperando datos...</pre>
+    </div>
 
     <script>
-        // ⭐️ IMPORTANTE: REEMPLAZA ESTA URL con la URL de tu Web App
-        const API_ENDPOINT_URL = 'REEMPLAZAR_CON_TU_URL_DE_APPS_SCRIPT_AQUÍ';
+        // ⭐️ IMPORTANTE: REEMPLAZA ESTA URL CON TU ENDPOINT DE APPS SCRIPT ⭐️
+        const API_ENDPOINT_URL = '[TU_URL_DE_APPS_SCRIPT_AQUÍ]'; 
         
+        const cookieInput = document.getElementById('cookieInput');
         const resultadoPre = document.getElementById('resultado');
-        const submitBtn = document.querySelector('button');
+        const submitBtn = document.getElementById('submitBtn');
 
-        async function obtenerSaludo() {
-            if (API_ENDPOINT_URL.includes('REEMPLAZAR')) {
-                resultadoPre.textContent = "ERROR: Por favor, actualiza la variable API_ENDPOINT_URL en el script.";
+        function mostrarResultado(message, type) {
+            resultadoPre.textContent = message;
+            resultadoPre.className = type;
+        }
+
+        async function validarCookie() {
+            const cookieValue = cookieInput.value.trim();
+
+            if (!cookieValue) {
+                mostrarResultado('Error: Ingresa la cookie de sesión.', 'error');
                 return;
             }
-            
+
+            if (API_ENDPOINT_URL.includes('TU_URL')) {
+                 mostrarResultado('Error: Por favor, actualiza la URL de la API.', 'error');
+                 return;
+            }
+
             submitBtn.disabled = true;
-            resultadoPre.textContent = 'Cargando...';
+            mostrarResultado('Cargando... Enviando solicitud al servidor de Google.', 'info');
+
+            const options = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // Enviamos la cookie en el cuerpo como JSON
+                body: JSON.stringify({
+                    cookie: cookieValue
+                })
+            };
 
             try {
-                const response = await fetch(API_ENDPOINT_URL);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
+                const response = await fetch(API_ENDPOINT_URL, options);
+                const responseBody = await response.json();
+
+                // Manejamos el error basado en la respuesta JSON de Apps Script
+                if (responseBody.error) {
+                    mostrarResultado(`❌ Error de Validación: ${responseBody.message}`, 'error');
+                } else if (responseBody.success) {
+                    // Éxito
+                    const userData = responseBody.userData;
+                    const displayName = userData.displayName || 'Desconocido';
+                    mostrarResultado(
+                        `✅ Validación Exitosa!\nConectado como: ${displayName}\n\nDatos Completos:\n${JSON.stringify(userData, null, 2)}`, 
+                        'success'
+                    );
+                } else {
+                    mostrarResultado('Error: Respuesta inesperada del servidor.', 'error');
                 }
-                
-                const data = await response.json();
-                
-                // Mostrar el resultado JSON
-                resultadoPre.textContent = '✅ Respuesta Exitosa:\n' + JSON.stringify(data, null, 2);
 
             } catch (error) {
-                // Captura errores de red o errores HTTP
-                resultadoPre.textContent = `❌ Error al consultar la API: ${error.message}`;
+                mostrarResultado(`❌ Fallo en la comunicación: ${error.message}. Verifica la URL de la API.`, 'error');
             } finally {
                 submitBtn.disabled = false;
             }
