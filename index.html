@@ -46,8 +46,10 @@
                 headers: {
                     // La cookie DEBE ser enviada en el header 'Cookie'
                     'Cookie': cookieValue,
-                    'Accept': 'application/json'
-                    // NOTA: Algunos proxies requieren que el header 'X-Requested-With' se omita o se establezca
+                   
+                      'Accept': 'application/json'
+    },
+    'muteHttpExceptions': true
                 }
             };
 
@@ -80,3 +82,4 @@
 
 </body>
 </html>
+
