@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud API GET</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            white-space: pre-wrap; /* Para mostrar el JSON con formato */
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Consulta a la API</h1>
+
+    <p>Haz clic en el botón para ejecutar la solicitud GET a la API.</p>
+
+    <input type="button" value="Consultar API" onclick="consultarAPI()">
+
+    <h2>Resultado:</h2>
+    <pre id="resultado">Esperando consulta...</pre>
+
+    <script>
+        /**
+         * Función para realizar una solicitud GET a la API.
+         */
+        function consultarAPI() {
+            // **IMPORTANTE**: Reemplaza '[TU_URL_DE_API_AQUI]' con la URL real de tu API.
+            const apiUrl = '[TU_URL_DE_API_AQUI]';
+            const resultadoDiv = document.getElementById('resultado');
+
+            resultadoDiv.textContent = 'Cargando...'; // Muestra un mensaje de carga
+
+            // Uso de la API Fetch para hacer la solicitud GET
+            fetch(apiUrl)
+                .then(response => {
+                    // Verifica si la respuesta es exitosa (código de estado 200-299)
+                    if (!response.ok) {
+                        // Lanza un error si la respuesta no es OK
+                        throw new Error(`Error HTTP: ${response.status}`);
+                    }
+                    // Convierte la respuesta a formato JSON
+                    return response.json();
+                })
+                .then(data => {
+                    // Muestra los datos obtenidos en la página
+                    // `JSON.stringify(data, null, 2)` formatea el JSON para una mejor lectura
+                    resultadoDiv.textContent = JSON.stringify(data, null, 2);
+                    console.log('Datos recibidos:', data);
+                })
+                .catch(error => {
+                    // Captura y maneja cualquier error (red, HTTP, JSON parsing)
+                    console.error('Hubo un problema con la solicitud fetch:', error);
+                    resultadoDiv.textContent = `Error al consultar la API: ${error.message}. Verifica la URL y la conexión.`;
+                });
+        }
+    </script>
+
+</body>
+</html>
